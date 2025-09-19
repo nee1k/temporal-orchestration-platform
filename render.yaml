@@ -12,7 +12,8 @@ services:
   - type: pserv
     name: postgres
     env: docker
-    image: postgres:15
+    image:
+      url: postgres:15
     plan: standard
     disk:
       name: pg-data
@@ -30,7 +31,8 @@ services:
   - type: pserv
     name: pgbouncer
     env: docker
-    image: edoburu/pgbouncer:1.21.0
+    image:
+      url: edoburu/pgbouncer:1.21.0
     startCommand: ["pgbouncer", "/etc/pgbouncer/pgbouncer.ini"]
     plan: starter
     envVars:
@@ -67,7 +69,8 @@ services:
   - type: pserv
     name: elasticsearch
     env: docker
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.12
+    image:
+      url: docker.elastic.co/elasticsearch/elasticsearch:7.17.12
     plan: standard
     disk:
       name: es-data
@@ -84,7 +87,8 @@ services:
   - type: pserv
     name: temporal-frontend
     env: docker
-    image: temporalio/server:1.23.0
+    image:
+      url: temporalio/server:1.23.0
     startCommand: ["temporal-server", "start", "--services", "frontend", "--config", "/etc/temporal/config/temporal.yaml"]
     plan: standard
     envVars:
@@ -213,7 +217,8 @@ services:
   - type: pserv
     name: temporal-history
     env: docker
-    image: temporalio/server:1.23.0
+    image:
+      url: temporalio/server:1.23.0
     startCommand: ["temporal-server", "start", "--services", "history", "--config", "/etc/temporal/config/temporal.yaml"]
     plan: standard
     envVars:
@@ -342,7 +347,8 @@ services:
   - type: pserv
     name: temporal-matching
     env: docker
-    image: temporalio/server:1.23.0
+    image:
+      url: temporalio/server:1.23.0
     startCommand: ["temporal-server", "start", "--services", "matching", "--config", "/etc/temporal/config/temporal.yaml"]
     plan: standard
     envVars:
@@ -471,7 +477,8 @@ services:
   - type: pserv
     name: temporal-worker
     env: docker
-    image: temporalio/server:1.23.0
+    image:
+      url: temporalio/server:1.23.0
     startCommand: ["temporal-server", "start", "--services", "worker", "--config", "/etc/temporal/config/temporal.yaml"]
     plan: standard
     envVars:
@@ -600,7 +607,8 @@ services:
   - type: worker
     name: admin-tools
     env: docker
-    image: temporalio/admin-tools:1.23.0
+    image:
+      url: temporalio/admin-tools:1.23.0
     autoDeploy: false
     numInstances: 0
     envVars:
@@ -627,7 +635,8 @@ services:
   - type: web
     name: temporal-ui
     env: docker
-    image: temporalio/ui:2
+    image:
+      url: temporalio/ui:2
     plan: starter
     envVars:
       - key: TEMPORAL_ADDRESS
