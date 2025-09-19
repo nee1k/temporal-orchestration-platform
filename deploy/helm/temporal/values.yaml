@@ -1,0 +1,24 @@
+server:
+  config:
+    persistence:
+      default:
+        sql:
+          user: temporal
+          password: temporal
+          host: postgresql.temporal.svc.cluster.local
+          port: 5432
+          database: temporal
+      visibility:
+        sql:
+          user: temporal
+          password: temporal
+          host: postgresql.temporal.svc.cluster.local
+          port: 5432
+          database: temporal
+    numHistoryShards: 4
+elasticsearch:
+  enabled: true
+  host: elasticsearch-master.temporal.svc.cluster.local
+  port: 9200
+ui:
+  enabled: true
