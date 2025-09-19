@@ -20,12 +20,7 @@ services:
       mountPath: /var/lib/postgresql/data
       sizeGB: 10
     envVars:
-      - key: POSTGRES_DB
-        fromGroup: postgres-auth
-      - key: POSTGRES_USER
-        fromGroup: postgres-auth
-      - key: POSTGRES_PASSWORD
-        fromGroup: postgres-auth
+      - fromGroup: postgres-auth
     autoDeploy: true
 
   - type: pserv
@@ -33,13 +28,13 @@ services:
     runtime: docker
     image:
       url: edoburu/pgbouncer:1.21.0
-    startCommand: |
+    dockerCommand: |
       set -euo pipefail
       mkdir -p /etc/pgbouncer
       cat >/etc/pgbouncer/pgbouncer.ini <<EOF
       [databases]
-      temporal = host=${DB_HOST} port=${DB_PORT} dbname=${POSTGRES_DB} user=${DB_USER} password=${DB_PASSWORD}
-      temporal_visibility = host=${DB_HOST} port=${DB_PORT} dbname=${POSTGRES_DB} user=${DB_USER} password=${DB_PASSWORD}
+      temporal = host=${DB_HOST} port=${DB_PORT} dbname=${POSTGRES_DB} user=${POSTGRES_USER} password=${POSTGRES_PASSWORD}
+      temporal_visibility = host=${DB_HOST} port=${DB_PORT} dbname=${POSTGRES_DB} user=${POSTGRES_USER} password=${POSTGRES_PASSWORD}
 
       [pgbouncer]
       listen_addr = 0.0.0.0
@@ -59,15 +54,9 @@ services:
           property: host
       - key: DB_PORT
         value: "5432"
-      - key: DB_USER
-        fromGroup: postgres-auth
-      - key: DB_PASSWORD
-        fromGroup: postgres-auth
       - key: POOL_SIZE
         value: "50"
-      - key: POSTGRES_DB
-        fromGroup: postgres-auth
-    
+      - fromGroup: postgres-auth
 
   - type: pserv
     name: elasticsearch
@@ -92,7 +81,7 @@ services:
     runtime: docker
     image:
       url: temporalio/server:1.23.0
-    startCommand: |
+    dockerCommand: |
       set -euo pipefail
       mkdir -p /etc/temporal/config
       cat >/etc/temporal/config/temporal.yaml <<EOF
@@ -114,11 +103,11 @@ services:
           default:
             sql:
               pluginName: ${SQL_PLUGIN:postgres}
-              databaseName: ${SQL_DB}
+              databaseName: ${POSTGRES_DB}
               connectAddr: ${SQL_HOST}:${SQL_PORT}
               connectProtocol: tcp
-              user: ${SQL_USER}
-              password: ${SQL_PASSWORD}
+              user: ${POSTGRES_USER}
+              password: ${POSTGRES_PASSWORD}
               maxConns: 25
               maxConnLifetime: 1h
           es-visibility:
@@ -200,12 +189,6 @@ services:
           property: host
       - key: SQL_PORT
         value: "6432"
-      - key: SQL_USER
-        fromGroup: postgres-auth
-      - key: SQL_PASSWORD
-        fromGroup: postgres-auth
-      - key: SQL_DB
-        fromGroup: postgres-auth
       - key: SQL_PLUGIN
         value: postgres
       - key: ES_SEEDS
@@ -217,14 +200,14 @@ services:
         value: "9200"
       - key: TEMPORAL_BROADCAST_ADDRESS
         value: 0.0.0.0
-
+      - fromGroup: postgres-auth
 
   - type: pserv
     name: temporal-history
     runtime: docker
     image:
       url: temporalio/server:1.23.0
-    startCommand: |
+    dockerCommand: |
       set -euo pipefail
       mkdir -p /etc/temporal/config
       cat >/etc/temporal/config/temporal.yaml <<EOF
@@ -246,11 +229,11 @@ services:
           default:
             sql:
               pluginName: ${SQL_PLUGIN:postgres}
-              databaseName: ${SQL_DB}
+              databaseName: ${POSTGRES_DB}
               connectAddr: ${SQL_HOST}:${SQL_PORT}
               connectProtocol: tcp
-              user: ${SQL_USER}
-              password: ${SQL_PASSWORD}
+              user: ${POSTGRES_USER}
+              password: ${POSTGRES_PASSWORD}
               maxConns: 25
               maxConnLifetime: 1h
           es-visibility:
@@ -332,12 +315,6 @@ services:
           property: host
       - key: SQL_PORT
         value: "6432"
-      - key: SQL_USER
-        fromGroup: postgres-auth
-      - key: SQL_PASSWORD
-        fromGroup: postgres-auth
-      - key: SQL_DB
-        fromGroup: postgres-auth
       - key: SQL_PLUGIN
         value: postgres
       - key: ES_SEEDS
@@ -349,14 +326,14 @@ services:
         value: "9200"
       - key: TEMPORAL_BROADCAST_ADDRESS
         value: 0.0.0.0
-
+      - fromGroup: postgres-auth
 
   - type: pserv
     name: temporal-matching
     runtime: docker
     image:
       url: temporalio/server:1.23.0
-    startCommand: |
+    dockerCommand: |
       set -euo pipefail
       mkdir -p /etc/temporal/config
       cat >/etc/temporal/config/temporal.yaml <<EOF
@@ -378,11 +355,11 @@ services:
           default:
             sql:
               pluginName: ${SQL_PLUGIN:postgres}
-              databaseName: ${SQL_DB}
+              databaseName: ${POSTGRES_DB}
               connectAddr: ${SQL_HOST}:${SQL_PORT}
               connectProtocol: tcp
-              user: ${SQL_USER}
-              password: ${SQL_PASSWORD}
+              user: ${POSTGRES_USER}
+              password: ${POSTGRES_PASSWORD}
               maxConns: 25
               maxConnLifetime: 1h
           es-visibility:
@@ -464,12 +441,6 @@ services:
           property: host
       - key: SQL_PORT
         value: "6432"
-      - key: SQL_USER
-        fromGroup: postgres-auth
-      - key: SQL_PASSWORD
-        fromGroup: postgres-auth
-      - key: SQL_DB
-        fromGroup: postgres-auth
       - key: SQL_PLUGIN
         value: postgres
       - key: ES_SEEDS
@@ -481,14 +452,14 @@ services:
         value: "9200"
       - key: TEMPORAL_BROADCAST_ADDRESS
         value: 0.0.0.0
-
+      - fromGroup: postgres-auth
 
   - type: pserv
     name: temporal-worker
     runtime: docker
     image:
       url: temporalio/server:1.23.0
-    startCommand: |
+    dockerCommand: |
       set -euo pipefail
       mkdir -p /etc/temporal/config
       cat >/etc/temporal/config/temporal.yaml <<EOF
@@ -510,11 +481,11 @@ services:
           default:
             sql:
               pluginName: ${SQL_PLUGIN:postgres}
-              databaseName: ${SQL_DB}
+              databaseName: ${POSTGRES_DB}
               connectAddr: ${SQL_HOST}:${SQL_PORT}
               connectProtocol: tcp
-              user: ${SQL_USER}
-              password: ${SQL_PASSWORD}
+              user: ${POSTGRES_USER}
+              password: ${POSTGRES_PASSWORD}
               maxConns: 25
               maxConnLifetime: 1h
           es-visibility:
@@ -596,12 +567,6 @@ services:
           property: host
       - key: SQL_PORT
         value: "6432"
-      - key: SQL_USER
-        fromGroup: postgres-auth
-      - key: SQL_PASSWORD
-        fromGroup: postgres-auth
-      - key: SQL_DB
-        fromGroup: postgres-auth
       - key: SQL_PLUGIN
         value: postgres
       - key: ES_SEEDS
@@ -613,7 +578,7 @@ services:
         value: "9200"
       - key: TEMPORAL_BROADCAST_ADDRESS
         value: 0.0.0.0
-
+      - fromGroup: postgres-auth
 
   - type: worker
     name: admin-tools
@@ -621,7 +586,7 @@ services:
     image:
       url: temporalio/admin-tools:1.23.0
     autoDeploy: false
-    numInstances: 0
+    numInstances: 1
     envVars:
       - key: SQL_HOST
         fromService:
@@ -630,21 +595,16 @@ services:
           property: host
       - key: SQL_PORT
         value: "6432"
-      - key: SQL_USER
-        fromGroup: postgres-auth
-      - key: SQL_PASSWORD
-        fromGroup: postgres-auth
-      - key: SQL_DB
-        fromGroup: postgres-auth
       - key: TEMPORAL_ADDRESS
         fromService:
           type: pserv
           name: temporal-frontend
           property: host
-    startCommand: |
+      - fromGroup: postgres-auth
+    dockerCommand: |
       set -euo pipefail
-      temporal-sql-tool --db postgres create --conn "host=$SQL_HOST port=$SQL_PORT user=$SQL_USER password=$SQL_PASSWORD dbname=$SQL_DB sslmode=disable" --schema-dir /etc/temporal/schema/postgresql/v96/temporal/versioned
-      temporal-sql-tool --db postgres create --conn "host=$SQL_HOST port=$SQL_PORT user=$SQL_USER password=$SQL_PASSWORD dbname=$SQL_DB sslmode=disable" --schema-dir /etc/temporal/schema/postgresql/v96/visibility/versioned
+      temporal-sql-tool --db postgres create --conn "host=$SQL_HOST port=$SQL_PORT user=$POSTGRES_USER password=$POSTGRES_PASSWORD dbname=$POSTGRES_DB sslmode=disable" --schema-dir /etc/temporal/schema/postgresql/v96/temporal/versioned
+      temporal-sql-tool --db postgres create --conn "host=$SQL_HOST port=$SQL_PORT user=$POSTGRES_USER password=$POSTGRES_PASSWORD dbname=$POSTGRES_DB sslmode=disable" --schema-dir /etc/temporal/schema/postgresql/v96/visibility/versioned
       tctl --address $TEMPORAL_ADDRESS:7233 namespace describe default || tctl --address $TEMPORAL_ADDRESS:7233 namespace register --rd 168h --gd 1 default
 
   - type: web
