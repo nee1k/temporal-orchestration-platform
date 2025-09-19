@@ -1,0 +1,37 @@
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "W", "I", "UP", "B", "N", "ANN", "S"]
+ignore = ["ANN101", "ANN102"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_unused_configs = true
+show_error_codes = true
+namespace_packages = true
+explicit_package_bases = true
+
+[tool.pytest.ini_options]
+addopts = "-q"
+pythonpath = ["workflows"]
+
+[project]
+name = "temporal-orchestration-platform"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+  "temporalio==1.7.0",
+  "pydantic==2.9.2",
+  "pydantic-settings==2.5.2",
+  "structlog==24.2.0",
+  "aiohttp==3.10.5",
+  "tenacity==9.0.0",
+  "uvloop==0.20.0; platform_system == "Linux"",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest==8.3.3",
+  "mypy==1.11.2",
+  "ruff==0.6.3",
+  "pytest-asyncio==0.24.0",
+]
