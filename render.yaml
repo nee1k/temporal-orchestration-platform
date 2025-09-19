@@ -25,7 +25,6 @@ services:
         fromGroup: postgres-auth
       - key: POSTGRES_PASSWORD
         fromGroup: postgres-auth
-    healthCheckPath: null
     autoDeploy: true
 
   - type: pserv
@@ -60,13 +59,10 @@ services:
           [pgbouncer]
           listen_addr = 0.0.0.0
           listen_port = 6432
-          auth_type = md5
-          auth_file = /etc/pgbouncer/userlist.txt
+          auth_type = trust
           max_client_conn = 200
           default_pool_size = ${POOL_SIZE}
           server_reset_query = DISCARD ALL
-      - path: /etc/pgbouncer/userlist.txt
-        content: 
 
   - type: pserv
     name: elasticsearch
@@ -84,7 +80,6 @@ services:
         value: "false"
       - key: ES_JAVA_OPTS
         value: -Xms512m -Xmx512m
-    healthCheckPath: null
 
   - type: pserv
     name: temporal-frontend
