@@ -1,0 +1,80 @@
+global:
+  membership:
+    broadcastAddress: ${TEMPORAL_BROADCAST_ADDRESS:0.0.0.0}
+  pprof:
+    port: 0
+  metrics:
+    prometheus:
+      framework: tally
+      listenAddress: 0.0.0.0:9090
+
+persistence:
+  numHistoryShards: 4
+  defaultStore: default
+  visibilityStore: es-visibility
+  datastores:
+    default:
+      sql:
+        pluginName: ${SQL_PLUGIN:postgres}
+        databaseName: ${SQL_DB}
+        connectAddr: ${SQL_HOST}:${SQL_PORT}
+        connectProtocol: tcp
+        user: ${SQL_USER}
+        password: ${SQL_PASSWORD}
+        maxConns: 25
+        maxConnLifetime: 1h
+    es-visibility:
+      elasticsearch:
+        version: v7
+        url:
+          scheme: http
+          host: ${ES_SEEDS}
+          port: ${ES_PORT:9200}
+        indices:
+          visibility: temporal-visibility
+
+archival:
+  history:
+    state: disabled
+  visibility:
+    state: disabled
+
+services:
+  frontend:
+    rpc:
+      grpcPort: 7233
+      membershipPort: 6933
+  history:
+    rpc:
+      grpcPort: 7234
+      membershipPort: 6934
+  matching:
+    rpc:
+      grpcPort: 7235
+      membershipPort: 6935
+  worker:
+    rpc:
+      grpcPort: 7239
+      membershipPort: 6939
+
+dynamicConfigClient:
+  filepath: /etc/temporal/config/dynamic_config.yaml
+
+dynamicConfig:
+  frontend.enableServerVersionCheck:
+    - value: true
+  history.enableParentClosePolicyWorker:
+    - value: true
+  frontend.validSearchAttributes:
+    - value:
+        BinaryChecksums: 1
+        CloseTime: 2
+        ExecutionDuration: 3
+        HistoryLength: 4
+        RunId: 5
+        StartTime: 6
+        StateTransitionCount: 7
+        TaskQueue: 8
+        TemporalChangeVersion: 9
+        WorkflowId: 10
+        WorkflowType: 11

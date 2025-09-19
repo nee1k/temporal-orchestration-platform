@@ -1,0 +1,12 @@
+# Dynamic config overrides (kept minimal; tune via env in production)
+system.forceSearchAttributesCacheRefreshOnRead:
+  - value: true
+history.defaultActivityRetryPolicy:
+  - value:
+      InitialIntervalInSeconds: 1
+      MaximumIntervalInSeconds: 60
+      MaximumAttempts: 0
+numHistoryShards:
+  - value: 4
+frontend.throttledLogRPS:
+  - value: 20
