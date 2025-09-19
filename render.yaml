@@ -1,0 +1,310 @@
+envVarGroups:
+  - name: postgres-auth
+    envVars:
+      - key: POSTGRES_DB
+        value: temporal
+      - key: POSTGRES_USER
+        value: temporal
+      - key: POSTGRES_PASSWORD
+        generateValue: true
+
+services:
+  - type: pserv
+    name: postgres
+    env: docker
+    docker:
+      image: postgres:15
+    plan: standard
+    disk:
+      name: pg-data
+      mountPath: /var/lib/postgresql/data
+      sizeGB: 10
+    envVars:
+      - key: POSTGRES_DB
+        fromGroup: postgres-auth
+      - key: POSTGRES_USER
+        fromGroup: postgres-auth
+      - key: POSTGRES_PASSWORD
+        fromGroup: postgres-auth
+    healthCheckPath: null
+    autoDeploy: true
+
+  - type: pserv
+    name: pgbouncer
+    env: docker
+    docker:
+      image: edoburu/pgbouncer:1.21.0
+      command:
+        - pgbouncer
+        - /etc/pgbouncer/pgbouncer.ini
+    plan: starter
+    envVars:
+      - key: DB_HOST
+        fromService:
+          type: pserv
+          name: postgres
+          property: host
+      - key: DB_PORT
+        value: "5432"
+      - key: DB_USER
+        fromGroup: postgres-auth
+      - key: DB_PASSWORD
+        fromGroup: postgres-auth
+      - key: POOL_SIZE
+        value: "50"
+      - key: POSTGRES_DB
+        fromGroup: postgres-auth
+    files:
+      - path: /etc/pgbouncer/pgbouncer.ini
+        content: |
+          [databases]
+          temporal = host=${DB_HOST} port=${DB_PORT} dbname=${POSTGRES_DB} user=${DB_USER} password=${DB_PASSWORD}
+          temporal_visibility = host=${DB_HOST} port=${DB_PORT} dbname=${POSTGRES_DB} user=${DB_USER} password=${DB_PASSWORD}
+
+          [pgbouncer]
+          listen_addr = 0.0.0.0
+          listen_port = 6432
+          auth_type = md5
+          auth_file = /etc/pgbouncer/userlist.txt
+          max_client_conn = 200
+          default_pool_size = ${POOL_SIZE}
+          server_reset_query = DISCARD ALL
+      - path: /etc/pgbouncer/userlist.txt
+        content: 
+
+  - type: pserv
+    name: elasticsearch
+    env: docker
+    docker:
+      image: docker.elastic.co/elasticsearch/elasticsearch:7.17.12
+    plan: standard
+    disk:
+      name: es-data
+      mountPath: /usr/share/elasticsearch/data
+      sizeGB: 20
+    envVars:
+      - key: discovery.type
+        value: single-node
+      - key: xpack.security.enabled
+        value: "false"
+      - key: ES_JAVA_OPTS
+        value: -Xms512m -Xmx512m
+    healthCheckPath: null
+
+  - type: pserv
+    name: temporal-frontend
+    env: docker
+    docker:
+      image: temporalio/server:1.23.0
+      command:
+        - temporal-server
+        - start
+        - --services
+        - frontend
+        - --config
+        - /etc/temporal/config/temporal.yaml
+    plan: standard
+    envVars:
+      - key: SQL_HOST
+        fromService:
+          type: pserv
+          name: pgbouncer
+          property: host
+      - key: SQL_PORT
+        value: "6432"
+      - key: SQL_USER
+        fromGroup: postgres-auth
+      - key: SQL_PASSWORD
+        fromGroup: postgres-auth
+      - key: SQL_DB
+        fromGroup: postgres-auth
+      - key: SQL_PLUGIN
+        value: postgres
+      - key: ES_SEEDS
+        fromService:
+          type: pserv
+          name: elasticsearch
+          property: host
+      - key: ES_PORT
+        value: "9200"
+      - key: TEMPORAL_BROADCAST_ADDRESS
+        value: 0.0.0.0
+    files:
+      - path: /etc/temporal/config/temporal.yaml
+        localPath: server/config/temporal.yaml
+      - path: /etc/temporal/config/dynamic_config.yaml
+        localPath: server/config/dynamic_config.yaml
+
+  - type: pserv
+    name: temporal-history
+    env: docker
+    docker:
+      image: temporalio/server:1.23.0
+      command:
+        - temporal-server
+        - start
+        - --services
+        - history
+        - --config
+        - /etc/temporal/config/temporal.yaml
+    plan: standard
+    envVars:
+      - key: SQL_HOST
+        fromService:
+          type: pserv
+          name: pgbouncer
+          property: host
+      - key: SQL_PORT
+        value: "6432"
+      - key: SQL_USER
+        fromGroup: postgres-auth
+      - key: SQL_PASSWORD
+        fromGroup: postgres-auth
+      - key: SQL_DB
+        fromGroup: postgres-auth
+      - key: SQL_PLUGIN
+        value: postgres
+      - key: ES_SEEDS
+        fromService:
+          type: pserv
+          name: elasticsearch
+          property: host
+      - key: ES_PORT
+        value: "9200"
+      - key: TEMPORAL_BROADCAST_ADDRESS
+        value: 0.0.0.0
+    files:
+      - path: /etc/temporal/config/temporal.yaml
+        localPath: server/config/temporal.yaml
+      - path: /etc/temporal/config/dynamic_config.yaml
+        localPath: server/config/dynamic_config.yaml
+
+  - type: pserv
+    name: temporal-matching
+    env: docker
+    docker:
+      image: temporalio/server:1.23.0
+      command:
+        - temporal-server
+        - start
+        - --services
+        - matching
+        - --config
+        - /etc/temporal/config/temporal.yaml
+    plan: standard
+    envVars:
+      - key: SQL_HOST
+        fromService:
+          type: pserv
+          name: pgbouncer
+          property: host
+      - key: SQL_PORT
+        value: "6432"
+      - key: SQL_USER
+        fromGroup: postgres-auth
+      - key: SQL_PASSWORD
+        fromGroup: postgres-auth
+      - key: SQL_DB
+        fromGroup: postgres-auth
+      - key: SQL_PLUGIN
+        value: postgres
+      - key: ES_SEEDS
+        fromService:
+          type: pserv
+          name: elasticsearch
+          property: host
+      - key: ES_PORT
+        value: "9200"
+      - key: TEMPORAL_BROADCAST_ADDRESS
+        value: 0.0.0.0
+    files:
+      - path: /etc/temporal/config/temporal.yaml
+        localPath: server/config/temporal.yaml
+      - path: /etc/temporal/config/dynamic_config.yaml
+        localPath: server/config/dynamic_config.yaml
+
+  - type: pserv
+    name: temporal-worker
+    env: docker
+    docker:
+      image: temporalio/server:1.23.0
+      command:
+        - temporal-server
+        - start
+        - --services
+        - worker
+        - --config
+        - /etc/temporal/config/temporal.yaml
+    plan: standard
+    envVars:
+      - key: SQL_HOST
+        fromService:
+          type: pserv
+          name: pgbouncer
+          property: host
+      - key: SQL_PORT
+        value: "6432"
+      - key: SQL_USER
+        fromGroup: postgres-auth
+      - key: SQL_PASSWORD
+        fromGroup: postgres-auth
+      - key: SQL_DB
+        fromGroup: postgres-auth
+      - key: SQL_PLUGIN
+        value: postgres
+      - key: ES_SEEDS
+        fromService:
+          type: pserv
+          name: elasticsearch
+          property: host
+      - key: ES_PORT
+        value: "9200"
+      - key: TEMPORAL_BROADCAST_ADDRESS
+        value: 0.0.0.0
+    files:
+      - path: /etc/temporal/config/temporal.yaml
+        localPath: server/config/temporal.yaml
+      - path: /etc/temporal/config/dynamic_config.yaml
+        localPath: server/config/dynamic_config.yaml
+
+  - type: worker
+    name: admin-tools
+    env: docker
+    docker:
+      image: temporalio/admin-tools:1.23.0
+    autoDeploy: false
+    numInstances: 0
+    envVars:
+      - key: SQL_HOST
+        fromService:
+          type: pserv
+          name: pgbouncer
+          property: host
+      - key: SQL_PORT
+        value: "6432"
+      - key: SQL_USER
+        fromGroup: postgres-auth
+      - key: SQL_PASSWORD
+        fromGroup: postgres-auth
+      - key: SQL_DB
+        fromGroup: postgres-auth
+      - key: TEMPORAL_ADDRESS
+        fromService:
+          type: pserv
+          name: temporal-frontend
+          property: host
+    startCommand: ["bash", "-lc", "set -euo pipefail; temporal-sql-tool --db postgres create --conn \"host=$SQL_HOST port=$SQL_PORT user=$SQL_USER password=$SQL_PASSWORD dbname=$SQL_DB sslmode=disable\" --schema-dir /etc/temporal/schema/postgresql/v96/temporal/versioned; temporal-sql-tool --db postgres create --conn \"host=$SQL_HOST port=$SQL_PORT user=$SQL_USER password=$SQL_PASSWORD dbname=$SQL_DB sslmode=disable\" --schema-dir /etc/temporal/schema/postgresql/v96/visibility/versioned; tctl --address $TEMPORAL_ADDRESS:7233 namespace describe default || tctl --address $TEMPORAL_ADDRESS:7233 namespace register --rd 168h --gd 1 default"]
+
+  - type: web
+    name: temporal-ui
+    env: docker
+    docker:
+      image: temporalio/ui:2
+    plan: starter
+    envVars:
+      - key: TEMPORAL_ADDRESS
+        fromService:
+          type: pserv
+          name: temporal-frontend
+          property: host
+    healthCheckPath: /
