@@ -1,13 +1,3 @@
-envVarGroups:
-  - name: postgres-auth
-    envVars:
-      - key: POSTGRES_DB
-        value: temporal
-      - key: POSTGRES_USER
-        value: temporal
-      - key: POSTGRES_PASSWORD
-        generateValue: true
-
 services:
   - type: pserv
     name: postgres
@@ -20,7 +10,12 @@ services:
       mountPath: /var/lib/postgresql/data
       sizeGB: 10
     envVars:
-      - fromGroup: postgres-auth
+      - key: POSTGRES_DB
+        value: temporal
+      - key: POSTGRES_USER
+        value: temporal
+      - key: POSTGRES_PASSWORD
+        generateValue: true
     autoDeploy: true
 
   - type: pserv
