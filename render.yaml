@@ -12,8 +12,7 @@ services:
   - type: pserv
     name: postgres
     env: docker
-    docker:
-      image: postgres:15
+    image: postgres:15
     plan: standard
     disk:
       name: pg-data
@@ -32,11 +31,8 @@ services:
   - type: pserv
     name: pgbouncer
     env: docker
-    docker:
-      image: edoburu/pgbouncer:1.21.0
-      command:
-        - pgbouncer
-        - /etc/pgbouncer/pgbouncer.ini
+    image: edoburu/pgbouncer:1.21.0
+    startCommand: ["pgbouncer", "/etc/pgbouncer/pgbouncer.ini"]
     plan: starter
     envVars:
       - key: DB_HOST
@@ -75,8 +71,7 @@ services:
   - type: pserv
     name: elasticsearch
     env: docker
-    docker:
-      image: docker.elastic.co/elasticsearch/elasticsearch:7.17.12
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.12
     plan: standard
     disk:
       name: es-data
@@ -94,15 +89,8 @@ services:
   - type: pserv
     name: temporal-frontend
     env: docker
-    docker:
-      image: temporalio/server:1.23.0
-      command:
-        - temporal-server
-        - start
-        - --services
-        - frontend
-        - --config
-        - /etc/temporal/config/temporal.yaml
+    image: temporalio/server:1.23.0
+    startCommand: ["temporal-server", "start", "--services", "frontend", "--config", "/etc/temporal/config/temporal.yaml"]
     plan: standard
     envVars:
       - key: SQL_HOST
@@ -131,22 +119,107 @@ services:
         value: 0.0.0.0
     files:
       - path: /etc/temporal/config/temporal.yaml
-        localPath: server/config/temporal.yaml
+        content: |
+          global:
+            membership:
+              broadcastAddress: ${TEMPORAL_BROADCAST_ADDRESS:0.0.0.0}
+            pprof:
+              port: 0
+            metrics:
+              prometheus:
+                framework: tally
+                listenAddress: 0.0.0.0:9090
+
+          persistence:
+            numHistoryShards: 4
+            defaultStore: default
+            visibilityStore: es-visibility
+            datastores:
+              default:
+                sql:
+                  pluginName: ${SQL_PLUGIN:postgres}
+                  databaseName: ${SQL_DB}
+                  connectAddr: ${SQL_HOST}:${SQL_PORT}
+                  connectProtocol: tcp
+                  user: ${SQL_USER}
+                  password: ${SQL_PASSWORD}
+                  maxConns: 25
+                  maxConnLifetime: 1h
+              es-visibility:
+                elasticsearch:
+                  version: v7
+                  url:
+                    scheme: http
+                    host: ${ES_SEEDS}
+                    port: ${ES_PORT:9200}
+                  indices:
+                    visibility: temporal-visibility
+
+          archival:
+            history:
+              state: disabled
+            visibility:
+              state: disabled
+
+          services:
+            frontend:
+              rpc:
+                grpcPort: 7233
+                membershipPort: 6933
+            history:
+              rpc:
+                grpcPort: 7234
+                membershipPort: 6934
+            matching:
+              rpc:
+                grpcPort: 7235
+                membershipPort: 6935
+            worker:
+              rpc:
+                grpcPort: 7239
+                membershipPort: 6939
+
+          dynamicConfigClient:
+            filepath: /etc/temporal/config/dynamic_config.yaml
+
+          dynamicConfig:
+            frontend.enableServerVersionCheck:
+              - value: true
+            history.enableParentClosePolicyWorker:
+              - value: true
+            frontend.validSearchAttributes:
+              - value:
+                  BinaryChecksums: 1
+                  CloseTime: 2
+                  ExecutionDuration: 3
+                  HistoryLength: 4
+                  RunId: 5
+                  StartTime: 6
+                  StateTransitionCount: 7
+                  TaskQueue: 8
+                  TemporalChangeVersion: 9
+                  WorkflowId: 10
+                  WorkflowType: 11
       - path: /etc/temporal/config/dynamic_config.yaml
-        localPath: server/config/dynamic_config.yaml
+        content: |
+          # Dynamic config overrides (kept minimal; tune via env in production)
+          system.forceSearchAttributesCacheRefreshOnRead:
+            - value: true
+          history.defaultActivityRetryPolicy:
+            - value:
+                InitialIntervalInSeconds: 1
+                MaximumIntervalInSeconds: 60
+                MaximumAttempts: 0
+          numHistoryShards:
+            - value: 4
+          frontend.throttledLogRPS:
+            - value: 20
 
   - type: pserv
     name: temporal-history
     env: docker
-    docker:
-      image: temporalio/server:1.23.0
-      command:
-        - temporal-server
-        - start
-        - --services
-        - history
-        - --config
-        - /etc/temporal/config/temporal.yaml
+    image: temporalio/server:1.23.0
+    startCommand: ["temporal-server", "start", "--services", "history", "--config", "/etc/temporal/config/temporal.yaml"]
     plan: standard
     envVars:
       - key: SQL_HOST
@@ -175,22 +248,107 @@ services:
         value: 0.0.0.0
     files:
       - path: /etc/temporal/config/temporal.yaml
-        localPath: server/config/temporal.yaml
+        content: |
+          global:
+            membership:
+              broadcastAddress: ${TEMPORAL_BROADCAST_ADDRESS:0.0.0.0}
+            pprof:
+              port: 0
+            metrics:
+              prometheus:
+                framework: tally
+                listenAddress: 0.0.0.0:9090
+
+          persistence:
+            numHistoryShards: 4
+            defaultStore: default
+            visibilityStore: es-visibility
+            datastores:
+              default:
+                sql:
+                  pluginName: ${SQL_PLUGIN:postgres}
+                  databaseName: ${SQL_DB}
+                  connectAddr: ${SQL_HOST}:${SQL_PORT}
+                  connectProtocol: tcp
+                  user: ${SQL_USER}
+                  password: ${SQL_PASSWORD}
+                  maxConns: 25
+                  maxConnLifetime: 1h
+              es-visibility:
+                elasticsearch:
+                  version: v7
+                  url:
+                    scheme: http
+                    host: ${ES_SEEDS}
+                    port: ${ES_PORT:9200}
+                  indices:
+                    visibility: temporal-visibility
+
+          archival:
+            history:
+              state: disabled
+            visibility:
+              state: disabled
+
+          services:
+            frontend:
+              rpc:
+                grpcPort: 7233
+                membershipPort: 6933
+            history:
+              rpc:
+                grpcPort: 7234
+                membershipPort: 6934
+            matching:
+              rpc:
+                grpcPort: 7235
+                membershipPort: 6935
+            worker:
+              rpc:
+                grpcPort: 7239
+                membershipPort: 6939
+
+          dynamicConfigClient:
+            filepath: /etc/temporal/config/dynamic_config.yaml
+
+          dynamicConfig:
+            frontend.enableServerVersionCheck:
+              - value: true
+            history.enableParentClosePolicyWorker:
+              - value: true
+            frontend.validSearchAttributes:
+              - value:
+                  BinaryChecksums: 1
+                  CloseTime: 2
+                  ExecutionDuration: 3
+                  HistoryLength: 4
+                  RunId: 5
+                  StartTime: 6
+                  StateTransitionCount: 7
+                  TaskQueue: 8
+                  TemporalChangeVersion: 9
+                  WorkflowId: 10
+                  WorkflowType: 11
       - path: /etc/temporal/config/dynamic_config.yaml
-        localPath: server/config/dynamic_config.yaml
+        content: |
+          # Dynamic config overrides (kept minimal; tune via env in production)
+          system.forceSearchAttributesCacheRefreshOnRead:
+            - value: true
+          history.defaultActivityRetryPolicy:
+            - value:
+                InitialIntervalInSeconds: 1
+                MaximumIntervalInSeconds: 60
+                MaximumAttempts: 0
+          numHistoryShards:
+            - value: 4
+          frontend.throttledLogRPS:
+            - value: 20
 
   - type: pserv
     name: temporal-matching
     env: docker
-    docker:
-      image: temporalio/server:1.23.0
-      command:
-        - temporal-server
-        - start
-        - --services
-        - matching
-        - --config
-        - /etc/temporal/config/temporal.yaml
+    image: temporalio/server:1.23.0
+    startCommand: ["temporal-server", "start", "--services", "matching", "--config", "/etc/temporal/config/temporal.yaml"]
     plan: standard
     envVars:
       - key: SQL_HOST
@@ -219,22 +377,107 @@ services:
         value: 0.0.0.0
     files:
       - path: /etc/temporal/config/temporal.yaml
-        localPath: server/config/temporal.yaml
+        content: |
+          global:
+            membership:
+              broadcastAddress: ${TEMPORAL_BROADCAST_ADDRESS:0.0.0.0}
+            pprof:
+              port: 0
+            metrics:
+              prometheus:
+                framework: tally
+                listenAddress: 0.0.0.0:9090
+
+          persistence:
+            numHistoryShards: 4
+            defaultStore: default
+            visibilityStore: es-visibility
+            datastores:
+              default:
+                sql:
+                  pluginName: ${SQL_PLUGIN:postgres}
+                  databaseName: ${SQL_DB}
+                  connectAddr: ${SQL_HOST}:${SQL_PORT}
+                  connectProtocol: tcp
+                  user: ${SQL_USER}
+                  password: ${SQL_PASSWORD}
+                  maxConns: 25
+                  maxConnLifetime: 1h
+              es-visibility:
+                elasticsearch:
+                  version: v7
+                  url:
+                    scheme: http
+                    host: ${ES_SEEDS}
+                    port: ${ES_PORT:9200}
+                  indices:
+                    visibility: temporal-visibility
+
+          archival:
+            history:
+              state: disabled
+            visibility:
+              state: disabled
+
+          services:
+            frontend:
+              rpc:
+                grpcPort: 7233
+                membershipPort: 6933
+            history:
+              rpc:
+                grpcPort: 7234
+                membershipPort: 6934
+            matching:
+              rpc:
+                grpcPort: 7235
+                membershipPort: 6935
+            worker:
+              rpc:
+                grpcPort: 7239
+                membershipPort: 6939
+
+          dynamicConfigClient:
+            filepath: /etc/temporal/config/dynamic_config.yaml
+
+          dynamicConfig:
+            frontend.enableServerVersionCheck:
+              - value: true
+            history.enableParentClosePolicyWorker:
+              - value: true
+            frontend.validSearchAttributes:
+              - value:
+                  BinaryChecksums: 1
+                  CloseTime: 2
+                  ExecutionDuration: 3
+                  HistoryLength: 4
+                  RunId: 5
+                  StartTime: 6
+                  StateTransitionCount: 7
+                  TaskQueue: 8
+                  TemporalChangeVersion: 9
+                  WorkflowId: 10
+                  WorkflowType: 11
       - path: /etc/temporal/config/dynamic_config.yaml
-        localPath: server/config/dynamic_config.yaml
+        content: |
+          # Dynamic config overrides (kept minimal; tune via env in production)
+          system.forceSearchAttributesCacheRefreshOnRead:
+            - value: true
+          history.defaultActivityRetryPolicy:
+            - value:
+                InitialIntervalInSeconds: 1
+                MaximumIntervalInSeconds: 60
+                MaximumAttempts: 0
+          numHistoryShards:
+            - value: 4
+          frontend.throttledLogRPS:
+            - value: 20
 
   - type: pserv
     name: temporal-worker
     env: docker
-    docker:
-      image: temporalio/server:1.23.0
-      command:
-        - temporal-server
-        - start
-        - --services
-        - worker
-        - --config
-        - /etc/temporal/config/temporal.yaml
+    image: temporalio/server:1.23.0
+    startCommand: ["temporal-server", "start", "--services", "worker", "--config", "/etc/temporal/config/temporal.yaml"]
     plan: standard
     envVars:
       - key: SQL_HOST
@@ -263,15 +506,106 @@ services:
         value: 0.0.0.0
     files:
       - path: /etc/temporal/config/temporal.yaml
-        localPath: server/config/temporal.yaml
+        content: |
+          global:
+            membership:
+              broadcastAddress: ${TEMPORAL_BROADCAST_ADDRESS:0.0.0.0}
+            pprof:
+              port: 0
+            metrics:
+              prometheus:
+                framework: tally
+                listenAddress: 0.0.0.0:9090
+
+          persistence:
+            numHistoryShards: 4
+            defaultStore: default
+            visibilityStore: es-visibility
+            datastores:
+              default:
+                sql:
+                  pluginName: ${SQL_PLUGIN:postgres}
+                  databaseName: ${SQL_DB}
+                  connectAddr: ${SQL_HOST}:${SQL_PORT}
+                  connectProtocol: tcp
+                  user: ${SQL_USER}
+                  password: ${SQL_PASSWORD}
+                  maxConns: 25
+                  maxConnLifetime: 1h
+              es-visibility:
+                elasticsearch:
+                  version: v7
+                  url:
+                    scheme: http
+                    host: ${ES_SEEDS}
+                    port: ${ES_PORT:9200}
+                  indices:
+                    visibility: temporal-visibility
+
+          archival:
+            history:
+              state: disabled
+            visibility:
+              state: disabled
+
+          services:
+            frontend:
+              rpc:
+                grpcPort: 7233
+                membershipPort: 6933
+            history:
+              rpc:
+                grpcPort: 7234
+                membershipPort: 6934
+            matching:
+              rpc:
+                grpcPort: 7235
+                membershipPort: 6935
+            worker:
+              rpc:
+                grpcPort: 7239
+                membershipPort: 6939
+
+          dynamicConfigClient:
+            filepath: /etc/temporal/config/dynamic_config.yaml
+
+          dynamicConfig:
+            frontend.enableServerVersionCheck:
+              - value: true
+            history.enableParentClosePolicyWorker:
+              - value: true
+            frontend.validSearchAttributes:
+              - value:
+                  BinaryChecksums: 1
+                  CloseTime: 2
+                  ExecutionDuration: 3
+                  HistoryLength: 4
+                  RunId: 5
+                  StartTime: 6
+                  StateTransitionCount: 7
+                  TaskQueue: 8
+                  TemporalChangeVersion: 9
+                  WorkflowId: 10
+                  WorkflowType: 11
       - path: /etc/temporal/config/dynamic_config.yaml
-        localPath: server/config/dynamic_config.yaml
+        content: |
+          # Dynamic config overrides (kept minimal; tune via env in production)
+          system.forceSearchAttributesCacheRefreshOnRead:
+            - value: true
+          history.defaultActivityRetryPolicy:
+            - value:
+                InitialIntervalInSeconds: 1
+                MaximumIntervalInSeconds: 60
+                MaximumAttempts: 0
+          numHistoryShards:
+            - value: 4
+          frontend.throttledLogRPS:
+            - value: 20
 
   - type: worker
     name: admin-tools
     env: docker
-    docker:
-      image: temporalio/admin-tools:1.23.0
+    image: temporalio/admin-tools:1.23.0
     autoDeploy: false
     numInstances: 0
     envVars:
@@ -298,8 +632,7 @@ services:
   - type: web
     name: temporal-ui
     env: docker
-    docker:
-      image: temporalio/ui:2
+    image: temporalio/ui:2
     plan: starter
     envVars:
       - key: TEMPORAL_ADDRESS
