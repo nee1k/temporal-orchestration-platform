@@ -3,7 +3,7 @@ services:
     name: postgres
     runtime: docker
     image:
-      url: postgres:15
+      url: "postgres:15"
     plan: standard
     disk:
       name: pg-data
@@ -22,7 +22,7 @@ services:
     name: pgbouncer
     runtime: docker
     image:
-      url: edoburu/pgbouncer:1.21.0
+      url: "edoburu/pgbouncer:1.21.0"
     dockerCommand: |
       set -euo pipefail
       mkdir -p /etc/pgbouncer
@@ -57,7 +57,7 @@ services:
     name: elasticsearch
     runtime: docker
     image:
-      url: docker.elastic.co/elasticsearch/elasticsearch:7.17.12
+      url: "docker.elastic.co/elasticsearch/elasticsearch:7.17.12"
     plan: standard
     disk:
       name: es-data
@@ -69,13 +69,13 @@ services:
       - key: xpack.security.enabled
         value: "false"
       - key: ES_JAVA_OPTS
-        value: -Xms512m -Xmx512m
+        value: "-Xms512m -Xmx512m"
 
   - type: pserv
     name: temporal-frontend
     runtime: docker
     image:
-      url: temporalio/server:1.23.0
+      url: "temporalio/server:1.23.0"
     dockerCommand: |
       set -euo pipefail
       mkdir -p /etc/temporal/config
@@ -194,14 +194,14 @@ services:
       - key: ES_PORT
         value: "9200"
       - key: TEMPORAL_BROADCAST_ADDRESS
-        value: 0.0.0.0
+        value: "0.0.0.0"
       - fromGroup: postgres-auth
 
   - type: pserv
     name: temporal-history
     runtime: docker
     image:
-      url: temporalio/server:1.23.0
+      url: "temporalio/server:1.23.0"
     dockerCommand: |
       set -euo pipefail
       mkdir -p /etc/temporal/config
@@ -320,14 +320,14 @@ services:
       - key: ES_PORT
         value: "9200"
       - key: TEMPORAL_BROADCAST_ADDRESS
-        value: 0.0.0.0
+        value: "0.0.0.0"
       - fromGroup: postgres-auth
 
   - type: pserv
     name: temporal-matching
     runtime: docker
     image:
-      url: temporalio/server:1.23.0
+      url: "temporalio/server:1.23.0"
     dockerCommand: |
       set -euo pipefail
       mkdir -p /etc/temporal/config
@@ -446,14 +446,14 @@ services:
       - key: ES_PORT
         value: "9200"
       - key: TEMPORAL_BROADCAST_ADDRESS
-        value: 0.0.0.0
+        value: "0.0.0.0"
       - fromGroup: postgres-auth
 
   - type: pserv
     name: temporal-worker
     runtime: docker
     image:
-      url: temporalio/server:1.23.0
+      url: "temporalio/server:1.23.0"
     dockerCommand: |
       set -euo pipefail
       mkdir -p /etc/temporal/config
@@ -572,14 +572,14 @@ services:
       - key: ES_PORT
         value: "9200"
       - key: TEMPORAL_BROADCAST_ADDRESS
-        value: 0.0.0.0
+        value: "0.0.0.0"
       - fromGroup: postgres-auth
 
   - type: worker
     name: admin-tools
     runtime: docker
     image:
-      url: temporalio/admin-tools:1.23.0
+      url: "temporalio/admin-tools:1.23.0"
     autoDeploy: false
     numInstances: 1
     envVars:
@@ -606,7 +606,7 @@ services:
     name: temporal-ui
     runtime: docker
     image:
-      url: temporalio/ui:2
+      url: "temporalio/ui:2"
     plan: starter
     envVars:
       - key: TEMPORAL_ADDRESS
