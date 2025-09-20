@@ -615,3 +615,13 @@ services:
           name: temporal-frontend
           property: host
     healthCheckPath: /
+
+envVarGroups:
+  - name: postgres-auth
+    envVars:
+      - key: POSTGRES_DB
+        value: temporal
+      - key: POSTGRES_USER
+        value: temporal
+      - key: POSTGRES_PASSWORD
+        generateValue: true
